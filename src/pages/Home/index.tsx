@@ -17,6 +17,7 @@ import { useContactStore, useUserStore } from "@/store/slices";
 
 import AvatarIMG from "@/assets/user.png";
 import { Contact } from "@/types";
+import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
 
 export default function Home() {
   const { user } = useUserStore();
@@ -35,10 +36,12 @@ export default function Home() {
   const [lat, setLatitude] = useState("");
   const [long, setLongitude] = useState("");
   const [newContactsList, setNewContactsList] = useState<Contact[]>([]);
+  const [centeredContact, setCenteredContact] = useState(false);
 
   const [showModalFormContact, setShowModalFormContact] = useState(false);
 
-  const { contacts, setContacts } = useContactStore();
+  const { contacts, setContacts, setContactSelected, contact } =
+    useContactStore();
 
   useEffect(() => {
     if (searchTerm !== "") {
@@ -47,45 +50,57 @@ export default function Home() {
           contacts.filter((contact) => contact.name?.includes(searchTerm)),
         );
         return;
+      } else {
+        setNewContactsList([]);
       }
       if (contacts.some((contact) => contact.cpf?.includes(searchTerm))) {
         setNewContactsList(
           contacts.filter((contact) => contact.cpf?.includes(searchTerm)),
         );
         return;
+      } else {
+        setNewContactsList([]);
       }
     } else {
       setNewContactsList(contacts);
     }
   }, [searchTerm, contacts]);
 
-  const handleChangeCEP = async (cep: string) => {
-    const cleanedCep = cep.replace(/\D/g, "");
-    setCEP(cleanedCep);
+  const handleChangeField = async (value: string) => {
+    const cleanedValue = value.replace(/\D/g, "");
 
-    if (cleanedCep.length === 8) {
-      await fetch(`https://viacep.com.br/ws/${cleanedCep}/json/`)
+    setCEP(cleanedValue);
+
+    if (cleanedValue.length === 8) {
+      await fetch(`https://viacep.com.br/ws/${cleanedValue}/json/`)
         .then((res) => res.json())
         .then((data) => {
           setLogradouro(data.logradouro);
           setUf(data.uf);
           setCidade(data.localidade);
           setBairro(data.bairro);
-        });
 
-      fetch(
-        `https://nominatim.openstreetmap.org/search?q=$${logradouro + "," + numero + "," + bairro + "," + cidade}&format=json&limit=1`,
-      )
-        .then((res) => res.json())
-        .then((data) => {
-          setLatitude(data[0].lat);
-          setLongitude(data[0].lon);
+          setTimeout(() => {
+            fetch(
+              `https://nominatim.openstreetmap.org/search?q=$${data.logradouro + "," + data.bairro + "," + data.localidade + "," + data.uf}&format=json&limit=1`,
+            )
+              .then((res) => res.json())
+              .then((data) => {
+                setLatitude(data[0].lat);
+                setLongitude(data[0].lon);
+              });
+          }, 1000);
         });
     }
   };
 
+  const handleDeleteContact = (id: number) => {
+    setContacts(contacts.filter((contact) => contact.id !== id));
+  };
+
   const handleSubmit = () => {
     const dataContact = {
+      id: contacts.length + 1,
       name: nomeContato,
       cpf: cpfContato,
       phone: telefoneContato,
@@ -102,7 +117,23 @@ export default function Home() {
       },
     };
     setContacts([...contacts, dataContact]);
-    setShowModalFormContact(false);
+    handleCleanStateModal();
+  };
+
+  const handleCleanStateModal = () => {
+    setShowModalFormContact(!showModalFormContact);
+    setNomeContato("");
+    setCpfContato("");
+    setTelefoneContato("");
+    setCEP("");
+    setLogradouro("");
+    setNumero("");
+    setComplemento("");
+    setUf("");
+    setCidade("");
+    setBairro("");
+    setLatitude("");
+    setLongitude("");
   };
 
   return (
@@ -149,13 +180,16 @@ export default function Home() {
                   <CardFooter className="justify-between p-0">
                     <Button
                       className="bg-green-400 text-black hover:bg-green-500"
-                      onClick={() => {}}
+                      onClick={() => {
+                        setContactSelected(newContact);
+                        setCenteredContact(true);
+                      }}
                     >
                       + Ver Mapa
                     </Button>
                     <Button
                       className="bg-red-400 text-black hover:bg-red-500"
-                      onClick={() => {}}
+                      onClick={() => handleDeleteContact(newContact?.id)}
                     >
                       - Excluir
                     </Button>
@@ -167,12 +201,36 @@ export default function Home() {
             )}
           </div>
         </div>
-        <div className="w-3/4 border"></div>
+        <div className="w-3/4 border">
+          <APIProvider apiKey={"AIzaSyCzGu7EfsUahVfwppcy9HKpZC-XChvLtos"}>
+            <Map
+              style={{ width: "100vw", height: "100vh" }}
+              zoom={centeredContact ? 15 : 10}
+              gestureHandling={"greedy"}
+              disableDefaultUI={true}
+              center={
+                centeredContact
+                  ? {
+                      lat: Number(contact?.address?.lat),
+                      lng: Number(contact?.address?.long),
+                    }
+                  : null
+              }
+              onDrag={() => setCenteredContact(false)}
+            >
+              {contact ? (
+                <Marker
+                  position={{
+                    lat: Number(contact?.address?.lat),
+                    lng: Number(contact?.address?.long),
+                  }}
+                />
+              ) : null}
+            </Map>
+          </APIProvider>
+        </div>
       </div>
-      <Dialog
-        open={showModalFormContact}
-        onOpenChange={setShowModalFormContact}
-      >
+      <Dialog open={showModalFormContact} onOpenChange={handleCleanStateModal}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Adicionar novo contato</DialogTitle>
@@ -219,7 +277,7 @@ export default function Home() {
                 id="cep"
                 className="w-3/4"
                 value={cep}
-                onChange={(e) => handleChangeCEP(e.target.value)}
+                onChange={(e) => handleChangeField(e.target.value)}
               />
             </div>
             <div className="flex w-full items-center justify-end gap-4">

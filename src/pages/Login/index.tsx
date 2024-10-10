@@ -59,7 +59,7 @@ const Login = () => {
   };
 
   return (
-    <div className="flex w-full h-screen items-center justify-center">
+    <div className="flex h-screen w-full items-center justify-center">
       <Card>
         <CardHeader>
           <CardTitle>{showRegister ? "Cadastro" : "Login"}</CardTitle>
