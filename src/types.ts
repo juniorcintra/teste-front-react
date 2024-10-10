@@ -6,7 +6,7 @@ export type User = {
 };
 
 export type Contact = {
-  id: number;
+  id?: number;
   name?: string;
   cpf?: string;
   phone?: string;

@@ -11,6 +11,7 @@ import { useGlobalStoreContext } from "@/store";
 import { useUserStore } from "@/store/slices";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Login = () => {
   const [showRegister, setShowRegister] = useState(false);
@@ -25,7 +26,7 @@ const Login = () => {
   const handleSubmit = () => {
     if (showRegister) {
       if (users?.some((user) => user.email === userEmail)) {
-        alert("Já existe um usuário cadastrado com esse email");
+        toast.error("Já existe um usuário cadastrado com esse email");
         return;
       }
       const userData = {
@@ -41,26 +42,27 @@ const Login = () => {
       setUserPassword("");
     } else {
       if (!users?.some((user) => user.email === userEmail)) {
-        alert("Usuário não encontrado");
+        toast.error("Usuário não encontrado");
         return;
       }
 
       const userFound = users.find((user) => user.email === userEmail);
 
       if (userFound?.password !== userPassword) {
-        alert("Senha incorreta, tente novamente.");
+        toast.error("Senha incorreta, tente novamente.");
         return;
       }
 
       setUserSelected(userFound);
       authenticateUser();
+      toast.success(`Bem vindo(a) ${userFound.name}`);
       navigate("/home");
     }
   };
 
   return (
     <div className="flex h-screen w-full items-center justify-center">
-      <Card>
+      <Card className="flex size-80 flex-col justify-between">
         <CardHeader>
           <CardTitle>{showRegister ? "Cadastro" : "Login"}</CardTitle>
         </CardHeader>
@@ -89,6 +91,11 @@ const Login = () => {
             <p className="cursor-pointer" onClick={() => setShowRegister(true)}>
               Criar Conta
             </p>
+          )}
+          {showRegister && (
+            <Button className="flex-1" onClick={() => setShowRegister(false)}>
+              Voltar
+            </Button>
           )}
           <Button className="flex-1" onClick={handleSubmit}>
             {showRegister ? "Cadastrar" : "Entrar"}
