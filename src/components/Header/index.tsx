@@ -4,17 +4,23 @@ import { Button } from "../ui/button";
 import { useUserStore } from "@/store/slices";
 
 import AvatarIMG from "@/assets/user.png";
+import { ConfirmDeleteAccount } from "../ConfirmDeleteAccount";
+import { useState } from "react";
+import { useGlobalStoreContext } from "@/store";
+import { useNavigate } from "react-router-dom";
 
-interface HeaderProps {
-  handleDeleteAccount: () => void;
-  handleLogout: () => void;
-}
+export default function Header() {
+  const { user, setUserSelected } = useUserStore();
+  const navigate = useNavigate();
+  const { logoutUser } = useGlobalStoreContext();
 
-export default function Header({
-  handleDeleteAccount,
-  handleLogout,
-}: HeaderProps) {
-  const { user } = useUserStore();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleLogout = () => {
+    navigate("/login");
+    logoutUser();
+    setUserSelected(undefined);
+  };
 
   return (
     <div className="flex w-full flex-row items-center justify-between px-4 py-2">
@@ -32,7 +38,7 @@ export default function Header({
         <PopoverContent className="flex w-80 flex-col space-y-4">
           <Button
             className="bg-red-500 text-white hover:bg-red-500/80"
-            onClick={handleDeleteAccount}
+            onClick={() => setShowDeleteConfirm(true)}
           >
             Deletar conta
           </Button>
@@ -41,6 +47,10 @@ export default function Header({
           </Button>
         </PopoverContent>
       </Popover>
+      <ConfirmDeleteAccount
+        showModalConfirm={showDeleteConfirm}
+        setShowDeleteConfirm={setShowDeleteConfirm}
+      />
     </div>
   );
 }

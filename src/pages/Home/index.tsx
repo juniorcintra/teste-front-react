@@ -3,24 +3,18 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { useContactStore, useUserStore } from "@/store/slices";
+import { useContactStore } from "@/store/slices";
 
 import { Contact } from "@/types";
 import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useGlobalStoreContext } from "@/store";
 import Header from "@/components/Header";
 import CardContact from "@/components/CardContact";
 import CreateEditContact from "@/components/CreateEditContact";
 
 export default function Home() {
-  const { setUsers, setUserSelected } = useUserStore();
   const { contacts, setContacts, setContactSelected, contact } =
     useContactStore();
-  const { logoutUser } = useGlobalStoreContext();
-
-  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -34,9 +28,15 @@ export default function Home() {
 
   useEffect(() => {
     if (searchTerm !== "") {
-      if (contacts.some((contact) => contact.name?.includes(searchTerm))) {
+      if (
+        contacts.some((contact) =>
+          contact.name?.toUpperCase().includes(searchTerm.toUpperCase()),
+        )
+      ) {
         setNewContactsList(
-          contacts.filter((contact) => contact.name?.includes(searchTerm)),
+          contacts.filter((contact) =>
+            contact.name?.toUpperCase().includes(searchTerm.toUpperCase()),
+          ),
         );
         return;
       } else {
@@ -59,20 +59,6 @@ export default function Home() {
     setContacts(contacts.filter((contact) => contact.id !== id));
   };
 
-  const handleDeleteAccount = () => {
-    navigate("/login");
-    logoutUser();
-    setUsers([]);
-    setContacts([]);
-    setUserSelected(undefined);
-  };
-
-  const handleLogout = () => {
-    navigate("/login");
-    logoutUser();
-    setUserSelected(undefined);
-  };
-
   const handleEdit = (contact: Contact) => {
     setShowModalFormContact(!showModalFormContact);
     setDataEdit(contact);
@@ -81,10 +67,7 @@ export default function Home() {
 
   return (
     <main className="flex h-screen w-full flex-col">
-      <Header
-        handleDeleteAccount={handleDeleteAccount}
-        handleLogout={handleLogout}
-      />
+      <Header />
       <div className="flex h-full w-full flex-row">
         <div className="relative flex h-full w-1/4 flex-col space-y-4 border p-2">
           <div className="flex flex-row items-center gap-2">
