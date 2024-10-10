@@ -1,10 +1,12 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { Route, Routes, useNavigate } from "react-router-dom";
 import { nav } from "./navigation";
 import { useEffect } from "react";
+import { useGlobalStoreContext } from "@/store";
 
 export default function Router() {
   const navigate = useNavigate();
-  const isAuthenticated = false;
+  const { isAuthenticated } = useGlobalStoreContext();
 
   useEffect(() => {
     if (isAuthenticated) {

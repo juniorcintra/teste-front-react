@@ -1,29 +1,25 @@
 import { User } from "@/types";
-import { usersConst } from "@/utils/constants";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export type UsersState = {
   users: User[];
   user?: User;
-  setUsers: (groups: User[]) => void;
-  setUserSelected: (group: User | undefined) => void;
+  setUsers: (users: User[]) => void;
+  setUserSelected: (user: User | undefined) => void;
 };
 
 export const useUserStore = create<UsersState>()(
   persist(
     (set) => ({
-      users: usersConst,
+      users: [],
       user: undefined,
-      setUsers: (users) =>
-        set({
-          users: users,
-        }),
+      setUsers: (users) => set({ users: users }),
       setUserSelected: (user) => set({ user: user }),
     }),
     {
       name: "users",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );

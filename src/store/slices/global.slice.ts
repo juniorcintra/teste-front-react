@@ -14,13 +14,9 @@ export type GlobalState = {
 export const useGlobalStore = create<GlobalState>()(
   persist(
     (set) => ({
-      user: {
-        name: "",
-        email: "",
-      },
+      user: null,
       isAuthenticated: false,
       isLoading: false,
-      currentPage: "/",
       setUser: () =>
         set({
           isAuthenticated: true,
@@ -35,7 +31,7 @@ export const useGlobalStore = create<GlobalState>()(
     }),
     {
       name: "globalStore", // name of the item in the storage (must be unique)
-      storage: createJSONStorage(() => sessionStorage), // (optional) by default, 'localStorage' is used
+      storage: createJSONStorage(() => localStorage), // (optional) by default, 'localStorage' is used
     }
   )
 );
