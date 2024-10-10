@@ -16,15 +16,11 @@ export type Contact = {
 export type Address = {
   cep: string;
   logradouro: string;
+  numero: string;
   complemento: string;
-  unidade: string;
   bairro: string;
-  localidade: string;
+  cidade: string;
   uf: string;
-  estado: string;
-  regiao: string;
-  ibge: string;
-  gia: string;
-  ddd: string;
-  siafi: string;
+  lat: string;
+  long: string;
 };
