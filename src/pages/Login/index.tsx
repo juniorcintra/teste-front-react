@@ -81,6 +81,7 @@ const Login = () => {
             placeholder="Senha"
             value={userPassword}
             onChange={(e) => setUserPassword(e.target.value)}
+            type="password"
           />
         </CardContent>
         <CardFooter className="flex flex-row items-center justify-between gap-2">

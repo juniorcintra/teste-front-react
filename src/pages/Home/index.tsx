@@ -18,9 +18,22 @@ import { useContactStore, useUserStore } from "@/store/slices";
 import AvatarIMG from "@/assets/user.png";
 import { Contact } from "@/types";
 import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
+import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useNavigate } from "react-router-dom";
+import { useGlobalStoreContext } from "@/store";
 
 export default function Home() {
-  const { user } = useUserStore();
+  const { user, setUsers, setUserSelected } = useUserStore();
+  const { contacts, setContacts, setContactSelected, contact } =
+    useContactStore();
+  const { logoutUser } = useGlobalStoreContext();
+
+  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [nomeContato, setNomeContato] = useState("");
@@ -37,11 +50,9 @@ export default function Home() {
   const [long, setLongitude] = useState("");
   const [newContactsList, setNewContactsList] = useState<Contact[]>([]);
   const [centeredContact, setCenteredContact] = useState(false);
+  const [orderedList, setOrderedList] = useState("asc");
 
   const [showModalFormContact, setShowModalFormContact] = useState(false);
-
-  const { contacts, setContacts, setContactSelected, contact } =
-    useContactStore();
 
   useEffect(() => {
     if (searchTerm !== "") {
@@ -82,12 +93,12 @@ export default function Home() {
 
           setTimeout(() => {
             fetch(
-              `https://nominatim.openstreetmap.org/search?q=$${data.logradouro + "," + data.bairro + "," + data.localidade + "," + data.uf}&format=json&limit=1`,
+              `https://maps.googleapis.com/maps/api/geocode/json?address=${cleanedValue}&key=AIzaSyCzGu7EfsUahVfwppcy9HKpZC-XChvLtos`,
             )
               .then((res) => res.json())
               .then((data) => {
-                setLatitude(data[0].lat);
-                setLongitude(data[0].lon);
+                setLatitude(data.results[0].geometry.location.lat);
+                setLongitude(data.results[0].geometry.location.lng);
               });
           }, 1000);
         });
@@ -96,6 +107,22 @@ export default function Home() {
 
   const handleDeleteContact = (id: number) => {
     setContacts(contacts.filter((contact) => contact.id !== id));
+  };
+
+  const handleDeleteAccount = () => {
+    navigate("/login");
+    logoutUser();
+    setUsers([]);
+    setContacts([]);
+    setUserSelected(undefined);
+    handleCleanStateModal();
+  };
+
+  const handleLogout = () => {
+    navigate("/login");
+    logoutUser();
+    setUserSelected(undefined);
+    handleCleanStateModal();
   };
 
   const handleSubmit = () => {
@@ -140,13 +167,28 @@ export default function Home() {
     <main className="flex h-screen w-full flex-col">
       <div className="flex w-full flex-row items-center justify-between px-4 py-2">
         <h3>Lista de Contatos</h3>
-        <div className="flex flex-row items-center gap-2 rounded-2xl border border-zinc-600 p-1">
-          <Avatar>
-            <AvatarImage src={AvatarIMG} />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
-          <span>{user?.name} </span>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <div className="flex cursor-pointer flex-row items-center gap-2 rounded-2xl border border-zinc-600 p-1">
+              <Avatar>
+                <AvatarImage src={AvatarIMG} />
+                <AvatarFallback>CN</AvatarFallback>
+              </Avatar>
+              <span>{user?.name} </span>
+            </div>
+          </PopoverTrigger>
+          <PopoverContent className="flex w-80 flex-col space-y-4">
+            <Button
+              className="bg-red-500 text-white hover:bg-red-500/80"
+              onClick={handleDeleteAccount}
+            >
+              Deletar conta
+            </Button>
+            <Button className="bg-black text-white" onClick={handleLogout}>
+              Deslogar
+            </Button>
+          </PopoverContent>
+        </Popover>
       </div>
       <div className="flex h-full w-full flex-row">
         <div className="relative flex h-full w-1/4 flex-col space-y-4 border p-2">
@@ -159,43 +201,62 @@ export default function Home() {
             />
             <Button onClick={() => setShowModalFormContact(true)}>+</Button>
           </div>
-          <div className="flex h-full w-full flex-col overflow-y-auto">
+          <div className="flex flex-row items-center gap-2">
+            Ordenar:
+            <Button onClick={() => setOrderedList("asc")}>
+              <ArrowDownAZ />
+            </Button>
+            <Button onClick={() => setOrderedList("desc")}>
+              <ArrowUpAZ />
+            </Button>
+          </div>
+          <div className="flex h-full w-full flex-col space-y-2 overflow-y-auto">
             {newContactsList.length > 0 ? (
-              newContactsList.map((newContact, index) => (
-                <Card key={index} className="p-2">
-                  <CardContent className="flex flex-col space-y-2 p-0">
-                    <p>
-                      <strong>Nome:</strong>
-                      {newContact.name}{" "}
-                    </p>
-                    <p>
-                      <strong>CPF:</strong>
-                      {newContact.cpf}{" "}
-                    </p>
-                    <p>
-                      <strong>Contato:</strong>
-                      {newContact.phone}{" "}
-                    </p>
-                  </CardContent>
-                  <CardFooter className="justify-between p-0">
-                    <Button
-                      className="bg-green-400 text-black hover:bg-green-500"
-                      onClick={() => {
-                        setContactSelected(newContact);
-                        setCenteredContact(true);
-                      }}
-                    >
-                      + Ver Mapa
-                    </Button>
-                    <Button
-                      className="bg-red-400 text-black hover:bg-red-500"
-                      onClick={() => handleDeleteContact(newContact?.id)}
-                    >
-                      - Excluir
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))
+              newContactsList
+                ?.slice()
+                .sort((a, b) => {
+                  const nameA = a.name || "";
+                  const nameB = b.name || "";
+
+                  return orderedList === "asc"
+                    ? nameA.localeCompare(nameB)
+                    : nameB.localeCompare(nameA);
+                })
+                .map((newContact, index) => (
+                  <Card key={index} className="space-y-2 p-2">
+                    <CardContent className="flex flex-col space-y-2 p-0">
+                      <p className="capitalize">
+                        <strong className="mr-1">Nome:</strong>
+                        {newContact.name}{" "}
+                      </p>
+                      <p>
+                        <strong className="mr-1">CPF:</strong>
+                        {newContact.cpf}{" "}
+                      </p>
+                      <p>
+                        <strong className="mr-1">Contato:</strong>
+                        {newContact.phone}{" "}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="justify-between p-0">
+                      <Button
+                        className="bg-green-400 text-black hover:bg-green-500"
+                        onClick={() => {
+                          setContactSelected(newContact);
+                          setCenteredContact(true);
+                        }}
+                      >
+                        Ver Mapa
+                      </Button>
+                      <Button
+                        className="bg-red-400 text-black hover:bg-red-500"
+                        onClick={() => handleDeleteContact(newContact?.id)}
+                      >
+                        Excluir
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))
             ) : (
               <span>Nenhum contato encontrado...</span>
             )}
@@ -204,8 +265,8 @@ export default function Home() {
         <div className="w-3/4 border">
           <APIProvider apiKey={"AIzaSyCzGu7EfsUahVfwppcy9HKpZC-XChvLtos"}>
             <Map
-              style={{ width: "100vw", height: "100vh" }}
-              zoom={centeredContact ? 15 : 10}
+              style={{ width: "100%", height: "100%" }}
+              defaultZoom={centeredContact ? 15 : 10}
               gestureHandling={"greedy"}
               disableDefaultUI={true}
               center={
