@@ -1,8 +1,7 @@
 # React + TypeScript + Vite
 
 
-## Iniciando projeto
-Primeiro, instale as dependencias:
+## Instalando dependencias do projeto
 
 ```bash
 npm install
@@ -10,8 +9,7 @@ npm install
 yarn install
 ```
 
-## Rodando o projeto projeto
-Segundo, rode o projeto:
+## Rodando o projeto
 
 ```bash
 npm run dev
